@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8.3)
+cmake_minimum_required(VERSION 3.0.2)
 project(mocap_optitrack)
 
 # Require c++11
@@ -11,14 +11,22 @@ else()
 endif()
 
 find_package(catkin REQUIRED COMPONENTS 
-	roscpp 
-	geometry_msgs 
-	tf 
-	roslaunch)
+  roscpp
+  geometry_msgs
+  nav_msgs
+  dynamic_reconfigure
+  tf)
+
+# dynamic reconfigure
+generate_dynamic_reconfigure_options(
+  cfg/MocapOptitrack.cfg
+)
+
 
 catkin_package(
   INCLUDE_DIRS include
   CATKIN_DEPENDS roscpp
+  dynamic_reconfigure
 )
 
 include_directories(include
@@ -30,5 +38,15 @@ add_subdirectory(src)
 install(DIRECTORY launch config
   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION})
 
-# Check the validity of the supplied launch files.
-roslaunch_add_file_check(launch)
+if (CATKIN_ENABLE_TESTING)
+  find_package(roslaunch REQUIRED)
+  roslaunch_add_file_check(launch/mocap.launch)
+
+  find_package(roslint REQUIRED)
+  file(GLOB LINT_SRCS
+    src/*.cpp
+    include/*.h)
+  set(ROSLINT_CPP_OPTS "--filter=-runtime/string,-readability/casting,-runtime/references")
+  roslint_cpp(${LINT_SRCS})
+  roslint_add_test()
+endif()
